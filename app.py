@@ -31,10 +31,13 @@ if uploaded_file:
     # -------------------------------
     st.subheader("📌 Research Paper Summary")
 
-    if st.button("Generate Summary"):
-        with st.spinner("Generating summary..."):
-            summary = generate_summary(sections)
-            st.write(summary)
+    if st.button("Generate Section-wise Summary"):
+        with st.spinner("Generating summaries..."):
+            summaries = generate_section_summaries(sections)
+
+            for sec, summ in summaries.items():
+                st.subheader(f"📌 {sec.capitalize()}")
+                st.write(summ)
 
     # -------------------------------
     # Q&A SECTION
