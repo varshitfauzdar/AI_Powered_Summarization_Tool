@@ -1,454 +1,362 @@
-# 🔬 AI-Powered Research Paper Assistant — MERN Stack
+# 📄 AI-Powered Research Paper Assistant
 
-<div align="center">
-
-![AI Research Assistant Banner](https://img.shields.io/badge/Stack-MERN%20%2B%20FastAPI-blueviolet?style=for-the-badge)
-![NLP](https://img.shields.io/badge/NLP-flan--t5--base%20%2B%20FAISS-cyan?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue?style=for-the-badge&logo=python)
-![Node](https://img.shields.io/badge/Node.js-18%2B-green?style=for-the-badge&logo=node.js)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)
-
-**Upload any research paper PDF → Get instant section-wise summaries + RAG-powered Q&A**
-
-*Powered by `google/flan-t5-base`, `all-MiniLM-L6-v2`, and FAISS — 100% local inference, no cloud API needed.*
-
-</div>
+An intelligent NLP-based system that summarizes research papers and enables interactive question answering using a hybrid **RAG (Retrieval-Augmented Generation)** pipeline with **Section-Aware Retrieval**.
 
 ---
 
-## 📋 Table of Contents
+## 🧠 Project Overview
 
-1. [Features](#-features)
-2. [System Architecture](#-system-architecture)
-3. [Tech Stack](#-tech-stack)
-4. [Project Structure (MVC)](#-project-structure-mvc)
-5. [How It Works](#-how-it-works)
-6. [API Reference](#-api-reference)
-7. [Setup & Installation](#-setup--installation)
-8. [Running the Project](#-running-the-project)
-9. [NLP Pipeline Details](#-nlp-pipeline-details)
-10. [UI Features](#-ui-features)
-11. [Environment Variables](#-environment-variables)
-12. [Troubleshooting](#-troubleshooting)
+Reading research papers is time-consuming due to their length, complexity, and structured format.  
+This project aims to:
+
+- 📌 Generate concise summaries of research papers  
+- 💬 Answer user queries based on paper content  
+- 🧠 Improve retrieval using document structure awareness  
 
 ---
 
-## ✨ Features
+## 🚀 Key Features
 
-| Feature | Description |
-|---|---|
-| 📄 **PDF Upload** | Drag-and-drop or browse to upload any research paper PDF (up to 50 MB) |
-| 🔍 **Section Detection** | Auto-detects 5 standard sections: Abstract, Introduction, Methodology, Results, Conclusion |
-| 📝 **Section-wise Summaries** | Hybrid summarization using sentence ranking + `flan-t5-base` LLM |
-| 💬 **RAG Q&A** | Ask any question about the paper — FAISS retrieval + flan-t5 answer generation |
-| ⚡ **Local Inference** | All models run locally — no OpenAI API key needed, 100% private |
-| 🎨 **Premium Dark UI** | Glassmorphism dark-mode interface with smooth animations |
-| 🏗️ **MVC Architecture** | Clean Express.js MVC backend with controllers, services, routes, middleware |
+- 📄 Upload any research paper (PDF)
+- 📝 Automatic summarization
+- 💬 Ask questions about the paper
+- 🧠 Section-aware intelligent retrieval
+- 🔍 Semantic chunking for better context understanding
+- ⚡ Fast and interactive Streamlit UI
 
 ---
 
-## 🏗️ System Architecture
+## 🧠 Core Technologies & Models
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     React Frontend (Vite)                        │
-│  ┌──────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────┐  │
-│  │UploadCard│  │ SummaryPanel │  │  QAPanel   │  │  Navbar  │  │
-│  └──────────┘  └──────────────┘  └────────────┘  └──────────┘  │
-│                        services/api.js (Axios)                   │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ REST API (proxied via Vite)
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  Express.js MVC Backend (:5000)                  │
-│                                                                   │
-│  routes/          controllers/         services/                  │
-│  ├─ documentRoutes│ ├─ documentCtrl   │ └─ nlpService.js         │
-│  └─ qaRoutes      │ └─ qaCtrl         │    (Axios → Python)      │
-│                   │                   │                           │
-│  middleware/                                                      │
-│  ├─ upload.js (multer)                                           │
-│  └─ errorHandler.js                                              │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ HTTP REST
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                Python FastAPI Microservice (:8000)               │
-│                                                                   │
-│  POST /extract    → PyMuPDF + text cleaning + section detection  │
-│  POST /summarize  → sentence ranking + flan-t5-base LLM         │
-│  POST /ask        → FAISS retrieval + flan-t5-base generation    │
-│                                                                   │
-│  Models loaded at startup:                                        │
-│  ├─ sentence-transformers: all-MiniLM-L6-v2                     │
-│  └─ transformers: google/flan-t5-base                            │
-└─────────────────────────────────────────────────────────────────┘
-```
+### 🔹 Embedding Model
+- **Sentence-BERT (all-MiniLM-L6-v2)**
+- Converts text into semantic embeddings
+- Used for similarity search in RAG pipeline
 
 ---
 
-## 🛠️ Tech Stack
-
-### Frontend
-| Technology | Purpose |
-|---|---|
-| **React 18** | UI framework |
-| **Vite** | Build tool + dev server |
-| **React Router v6** | Client-side routing |
-| **Axios** | HTTP client |
-| **react-dropzone** | Drag-and-drop PDF upload |
-| **Vanilla CSS** | Custom design system (glassmorphism, dark mode) |
-| **Inter + JetBrains Mono** | Typography (Google Fonts) |
-
-### Backend (Express MVC)
-| Technology | Purpose |
-|---|---|
-| **Express.js** | MVC REST API server |
-| **Multer** | PDF file upload (memory storage) |
-| **Axios** | HTTP client to call Python FastAPI |
-| **form-data** | Forwarding multipart files to Python service |
-| **dotenv** | Environment variable management |
-| **cors** | Cross-origin resource sharing |
-
-### NLP Microservice (Python FastAPI)
-| Technology | Purpose |
-|---|---|
-| **FastAPI** | High-performance async Python web framework |
-| **PyMuPDF (fitz)** | PDF text extraction |
-| **sentence-transformers** | `all-MiniLM-L6-v2` — sentence embeddings |
-| **FAISS** | Facebook AI Similarity Search — vector retrieval |
-| **transformers** | `google/flan-t5-base` — text summarization + QA |
-| **scikit-learn** | Cosine similarity for sentence ranking |
-| **NumPy** | Array operations |
+### 🔹 Language Model (LLM)
+- **FLAN-T5 (google/flan-t5-small)**
+- Instruction-tuned transformer
+- Used for:
+  - Answer generation
+  - Summarization
 
 ---
 
-## 📁 Project Structure (MVC)
-
-```
-AI_Powered_Summarization_Tool/
-│
-├── client/                          # React + Vite Frontend
-│   ├── index.html                   # Root HTML with SEO meta tags
-│   ├── vite.config.js               # Vite config + API proxy
-│   ├── package.json
-│   └── src/
-│       ├── main.jsx                 # React entry point
-│       ├── App.jsx                  # Router + global state
-│       ├── index.css                # Premium design system
-│       ├── pages/
-│       │   ├── Home.jsx             # Main page (upload → summary → Q&A)
-│       │   └── Home.css
-│       ├── components/
-│       │   ├── Navbar.jsx           # Sticky header with file badge
-│       │   ├── Navbar.css
-│       │   ├── UploadCard.jsx       # Hero + drag-and-drop dropzone
-│       │   ├── UploadCard.css
-│       │   ├── SummaryPanel.jsx     # Section-wise summary accordion
-│       │   ├── SummaryPanel.css
-│       │   ├── QAPanel.jsx          # Chat-style Q&A interface
-│       │   ├── QAPanel.css
-│       │   ├── LoadingSpinner.jsx   # Animated orbital spinner
-│       │   └── LoadingSpinner.css
-│       └── services/
-│           └── api.js               # Centralized Axios API service
-│
-├── server/                          # Express MVC Backend
-│   ├── server.js                    # Entry point — starts server
-│   ├── app.js                       # Express app setup, CORS, routes
-│   ├── package.json
-│   ├── .env                         # Environment variables
-│   ├── controllers/
-│   │   ├── documentController.js    # Upload + summarize actions
-│   │   └── qaController.js          # Ask question action
-│   ├── middleware/
-│   │   ├── upload.js                # Multer (memory storage, PDF only)
-│   │   └── errorHandler.js          # Global error handler
-│   ├── routes/
-│   │   ├── documentRoutes.js        # /api/documents/upload, /summarize
-│   │   └── qaRoutes.js              # /api/qa/ask
-│   └── services/
-│       └── nlpService.js            # Axios calls to Python FastAPI
-│
-├── python_service/                  # Python FastAPI NLP Microservice
-│   ├── main.py                      # FastAPI app + all endpoints
-│   ├── rag_pipeline.py              # Full NLP pipeline (models + logic)
-│   └── requirements.txt
-│
-├── README.md                        # Original README (untouched)
-└── README_NEW.md                    # This file — new comprehensive README
-```
+### 🔹 Vector Search
+- **FAISS (Facebook AI Similarity Search)**
+- Efficient similarity search for embeddings
+- Enables fast retrieval of relevant content
 
 ---
 
-## ⚙️ How It Works
+## 🧱 System Architecture</br>
+PDF Input</br>
+↓</br>
+Text Extraction (PyMuPDF)</br>
+↓</br>
+Text Cleaning & Preprocessing</br>
+↓</br>
+Section Detection (Abstract, Method, Results, etc.)</br>
+↓</br>
+Sentence Filtering & Semantic Chunking</br>
+↓</br>
+Embedding (SBERT)</br>
+↓</br>
+FAISS Vector Index</br>
+↓</br>
+Query Processing</br>
+↓</br>
+Section-Aware Retrieval ⭐</br>
+↓</br>
+LLM (FLAN-T5)</br>
+↓</br>
+Final Answer / Summary</br>
 
-### Step 1 — PDF Upload & Section Detection
-1. User uploads a PDF via the drag-and-drop interface
-2. React sends `multipart/form-data` to `POST /api/documents/upload` (Express)
-3. Express uses Multer to read the file into memory, then forwards it to `POST /extract` (FastAPI)
-4. FastAPI uses **PyMuPDF** to extract raw text from all pages
-5. Text is cleaned (broken words, emails, noise removed)
-6. **Section detection** runs line-by-line, detecting: `abstract`, `introduction`, `method`, `results`, `conclusion`
-7. Sections JSON is returned to React — displayed in the UI
-
-### Step 2 — Section-wise Summary Generation
-1. User clicks "Generate Summaries"
-2. React sends sections JSON to `POST /api/documents/summarize` (Express)
-3. Express forwards to `POST /summarize` (FastAPI)
-4. For each section, FastAPI runs the **hybrid summarization pipeline**:
-   - Split section into sentences
-   - **Rank sentences** by cosine centrality using `all-MiniLM-L6-v2` embeddings
-   - Select top 12 most central/important sentences
-   - Feed filtered text into `google/flan-t5-base` for final summarization
-5. Summaries returned to React and displayed in expandable accordion cards
-
-### Step 3 — RAG-based Q&A
-1. User types a question in the chat interface
-2. React sends `{ query, sections }` to `POST /api/qa/ask` (Express)
-3. Express forwards to `POST /ask` (FastAPI)
-4. FastAPI runs the **RAG pipeline**:
-   - Query-to-section mapping (keyword-based routing)
-   - Split target section into sentences
-   - Encode all sentences using `all-MiniLM-L6-v2`
-   - Build **FAISS IndexFlatL2** index
-   - Encode query → retrieve top-5 most similar sentences
-   - Feed retrieved context + question into `flan-t5-base` for answer generation
-5. Answer + source section returned to React → displayed as a chat message
 
 ---
 
-## 📡 API Reference
+## 🔥 Key Innovations
 
-### Express MVC Endpoints
+Phase 1 → Basic RAG system
 
-| Method | Endpoint | Description | Body |
-|---|---|---|---|
-| `POST` | `/api/documents/upload` | Upload PDF, extract sections | `multipart/form-data` field: `pdf` |
-| `POST` | `/api/documents/summarize` | Generate section summaries | `{ sections: {...} }` |
-| `POST` | `/api/qa/ask` | RAG-powered Q&A | `{ query: string, sections: {...} }` |
-| `GET` | `/api/health` | Express server health check | — |
+### ⭐ 1. Semantic Chunking
+Instead of fixed-size chunks, sentences are grouped based on semantic similarity using SBERT embeddings.
 
-### Python FastAPI Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/extract` | PDF extraction + section detection |
-| `POST` | `/summarize` | Hybrid section summarization |
-| `POST` | `/ask` | FAISS + flan-t5 Q&A |
-| `GET` | `/health` | FastAPI health check |
-| `GET` | `/docs` | Auto-generated Swagger UI |
+✔ Preserves contextual meaning  
+✔ Improves retrieval quality  
 
 ---
 
-## 🚀 Setup & Installation
+## 🚀 Phase 2 Upgrade: Hybrid Extractive + Abstractive Summarization 🔥
 
-### Prerequisites
+### 🧠 Motivation
 
-- **Node.js** v18 or higher
-- **Python** 3.9 or higher
-- **pip** (Python package manager)
+In the initial version of our system, we used a **pure LLM-based summarization approach**, where entire sections of the research paper were directly passed to the language model (FLAN-T5) for summary generation.
 
-### 1. Clone the repository
+However, this approach had several limitations:
+
+- ❌ Repetition in generated summaries  
+- ❌ Inclusion of noisy or irrelevant content (e.g., template text, metadata)  
+- ❌ Lack of focus on key important sentences  
+- ❌ Inefficient handling of long documents  
+
+---
+
+### 🔥 Proposed Improvement
+
+To address these issues, we introduced a **Hybrid Summarization Approach** that combines:
+
+- **Extractive Summarization (Sentence Ranking using SBERT)**  
+- **Abstractive Summarization (FLAN-T5)**  
+
+---
+
+### ⚙️ How It Works</br>
+Section Text</br>
+↓</br>
+Sentence Splitting</br>
+↓</br>
+Semantic Embedding (SBERT)</br>
+↓</br>
+Sentence Ranking (Cosine Similarity)</br>
+↓</br>
+Top-K Important Sentences Selected</br>
+↓</br>
+LLM (FLAN-T5)</br>
+↓</br>
+Final Summary</br>
+
+
+---
+
+### 🧩 Key Idea
+
+Instead of sending the entire section to the LLM, we:
+
+1. Extract meaningful sentences  
+2. Rank them based on semantic importance  
+3. Select top relevant sentences  
+4. Pass only filtered content to the LLM  
+
+---
+
+### ✅ Benefits
+
+- 🔥 Reduces repetition in summaries  
+- 🎯 Focuses on important content only  
+- 🧹 Removes noise from raw PDF extraction  
+- 📄 Improves summary coherence and readability  
+- ⚡ More efficient processing for long documents  
+
+---
+
+### ⚔️ Comparison with Previous Approach
+
+| Feature | Pure LLM Approach | Hybrid Approach |
+|--------|------------------|----------------|
+| Input to LLM | Full section text | Filtered important sentences |
+| Noise Handling | ❌ Poor | ✅ Strong |
+| Repetition | ❌ High | ✅ Low |
+| Control over content | ❌ None | ✅ High |
+| Summary Quality | ⚠️ Moderate | 🔥 High |
+
+---
+
+### 🧠 Technical Implementation
+
+- **Sentence Embeddings:** SBERT (`all-MiniLM-L6-v2`)  
+- **Similarity Measure:** Cosine Similarity  
+- **Ranking Strategy:** Sentence importance based on similarity matrix  
+- **Generation Model:** FLAN-T5  
+
+---
+
+### 🎯 Outcome
+
+This upgrade significantly improved the quality of summaries by ensuring that:
+
+- Only meaningful and relevant content is processed  
+- The LLM generates structured and concise summaries  
+- Redundancy and hallucination are reduced  
+
+---
+
+### 🎤 Key Insight
+
+> “Instead of summarizing everything, we first identify what is important, and then summarize it.”
+
+
+---
+
+### ⭐ 2. Section-Aware Retrieval (Main Contribution)
+Traditional RAG retrieves from entire document.
+
+We improve it by:
+---
+Query → Detect Section → Retrieve from that section
+---
+
+
+✔ Improves accuracy  
+✔ Reduces irrelevant retrieval  
+✔ Aligns with research paper structure  
+
+---
+
+### ⭐ 3. Intelligent Text Filtering
+We remove:
+- citations (e.g., *et al.*)
+- short sentences
+- noisy references
+
+✔ Cleaner input  
+✔ Better model performance  
+
+---
+
+### ⭐ 4. Hybrid RAG + Direct Section Retrieval
+- Uses section-based filtering for precision  
+- Uses RAG for semantic relevance  
+
+---
+
+## 📊 Pipeline Explanation
+
+### 🔹 Summarization Pipeline
+- Uses **Abstract + Introduction + Conclusion**
+- Generates concise summary using FLAN-T5
+
+---
+
+### 🔹 Question Answering Pipeline
+1. Detect relevant section
+2. Split into meaningful sentences
+3. Convert into embeddings (SBERT)
+4. Retrieve top-k relevant sentences (FAISS)
+5. Pass context to FLAN-T5
+6. Generate answer
+
+---
+
+## 🖥️ User Interface
+
+Built using **Streamlit**
+
+Features:
+- PDF Upload
+- Summary Generation Button
+- Interactive Q&A Input
+
+---
+
+## ⚙️ Installation & Setup
 
 ```bash
-git clone <your-repo-url>
-cd AI_Powered_Summarization_Tool
-```
-
-### 2. Install Python NLP service dependencies
-
-```bash
-cd python_service
-pip install -r requirements.txt
-```
-
-> ⚠️ **First run downloads models** (~1.5 GB):
-> - `all-MiniLM-L6-v2` (~90 MB)
-> - `google/flan-t5-base` (~1 GB)
->
-> Models are cached after first download via HuggingFace cache.
-
-### 3. Install Express backend dependencies
-
-```bash
-cd ../server
-npm install
-```
-
-### 4. Install React frontend dependencies
-
-```bash
-cd ../client
-npm install
-```
+pip install streamlit pymupdf sentence-transformers faiss-cpu transformers torch
 
 ---
 
-## ▶️ Running the Project
+▶️ Run the Application
 
-You need **3 terminals** running simultaneously:
+streamlit run app.py
 
-### Terminal 1 — Python FastAPI (NLP service)
+📂 Project Structure
+project/│├── app.py              # Streamlit UI├── rag_pipeline.py     # Core NLP pipeline├── README.md
 
-```bash
-cd python_service
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
+🎯 Example Use Cases
 
-Wait for: `Application startup complete.` (model loading takes ~30–60s on first run)
 
-### Terminal 2 — Express MVC Server
+📚 Students analyzing research papers
 
-```bash
-cd server
-npm run dev
-```
 
-Wait for: `🚀 Express MVC Server running on http://localhost:5000`
+🔬 Researchers reviewing literature
 
-### Terminal 3 — React Frontend
 
-```bash
-cd client
-npm run dev
-```
+🧠 NLP learning projects
 
-Open: **http://localhost:5173**
 
----
+📄 Automated document assistants
 
-## 🧠 NLP Pipeline Details
 
-### Models Used
 
-| Model | Size | Purpose |
-|---|---|---|
-| `all-MiniLM-L6-v2` | ~90 MB | Sentence embeddings for FAISS indexing + cosine similarity ranking |
-| `google/flan-t5-base` | ~1 GB | Text summarization + question answering |
+⚠️ Limitations
 
-### Section Detection Keywords
 
-| Section | Trigger Keywords |
-|---|---|
-| Abstract | Line starts with `abstract` |
-| Introduction | Line starts with `introduction` |
-| Methodology | Contains `method` or `approach` |
-| Results | Contains `result` or `experiment` |
-| Conclusion | Contains `conclusion` or `discussion` |
+Limited context window of transformer models
 
-### Hybrid Summarization Pipeline
 
-```
-Raw Section Text
-      │
-      ▼
-Sentence Splitting (regex, filters noise < 50 chars, citations, et al.)
-      │
-      ▼
-Encode with all-MiniLM-L6-v2
-      │
-      ▼
-Cosine Similarity Matrix (sklearn)
-      │
-      ▼
-Sentence Centrality Ranking (top 12 sentences)
-      │
-      ▼
-flan-t5-base LLM Summarization
-      │
-      ▼
-Final Summary (max 300 tokens, no-repeat-ngram=3, repetition_penalty=1.5)
-```
+May miss information if section detection is imperfect
 
-### RAG Q&A Pipeline
 
-```
-User Question
-      │
-      ▼
-Query → Section Mapping (keyword routing)
-      │
-      ▼
-Split target section into sentences
-      │
-      ▼
-Encode sentences with all-MiniLM-L6-v2
-      │
-      ▼
-FAISS IndexFlatL2 — vector search (top 5 sentences)
-      │
-      ▼
-flan-t5-base Answer Generation
-      │
-      ▼
-Answer + source section returned
-```
+Works best with well-structured research papers
 
----
 
-## 🎨 UI Features
 
-- **Dark glassmorphism theme** — `rgba` layers with `backdrop-filter: blur`
-- **Purple/blue/cyan gradient** palette throughout
-- **Animated hero** with floating orbs on the upload screen
-- **Drag-and-drop** PDF upload with visual states (hover, active, reject)
-- **Upload progress bar** with percentage
-- **Section accordion cards** — each section with colored accent bar, word count badge
-- **Chat-style Q&A** — user/AI message bubbles with timestamps
-- **Typing indicator** — three-dot animation while answer is generating
-- **Source section tag** — shows which section the answer was retrieved from
-- **Suggested questions** — clickable chips to get started quickly
-- **Sticky navbar** — shows active filename, service status dot, reset button
-- **Micro-animations** — `fadeInUp`, `pulse-glow`, orbital spinner, shimmer skeleton
-- **Responsive** — works on mobile and tablet
+🚀 Future Improvements
 
----
 
-## 🔧 Environment Variables
+🔥 Fine-tuning on scientific datasets (e.g., SciBERT, Longformer)
 
-### server/.env
 
-```env
-PYTHON_SERVICE_URL=http://localhost:8000   # Python FastAPI URL
-PORT=5000                                   # Express server port
-NODE_ENV=development
-```
+📊 Add evaluation metrics (ROUGE, BLEU)
 
----
 
-## 🐛 Troubleshooting
+🌐 Deploy using FastAPI + Next.js
 
-### "NLP service is currently unavailable"
-- Ensure the Python FastAPI service is running on port 8000
-- Run: `uvicorn main:app --port 8000`
-- Check if models finished loading (watch terminal output)
 
-### "CUDA out of memory" or slow inference
-- The models run on CPU by default. This is expected — flan-t5-base inference takes 15–60 seconds per section
-- For faster inference, use `flan-t5-small` (change model name in `python_service/rag_pipeline.py`)
+💬 Add chat history and memory
 
-### "Could not detect meaningful sections"
-- The PDF may use non-standard section headings
-- Try a standard IEEE/ACM/arXiv format research paper
 
-### CORS errors in browser
-- Ensure Express is running on port 5000
-- The Vite dev server proxies `/api` → `http://localhost:5000` automatically
+🧠 Improve section detection using ML models
 
-### Models not downloading
-- Check internet connection on first run
-- Models are downloaded from HuggingFace Hub and cached in `~/.cache/huggingface/`
 
----
+📈 Confidence scoring system
 
-## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
 
----
+🎤 Project Highlights (For Presentation)
 
-<div align="center">
-Built with ❤️ using React + Express + FastAPI + flan-t5
-</div>
+
+Built a full RAG-based NLP system
+
+
+Introduced Section-Aware Retrieval
+
+
+Improved summarization quality using structured context
+
+
+Implemented end-to-end pipeline from PDF → Answer
+
+
+
+👨‍💻 Author
+Developed as part of NLP project with focus on:
+
+
+AI systems
+
+
+LLM integration
+
+
+real-world applications
+
+
+
+⭐ Final Note
+This project demonstrates how combining:
+
+
+semantic understanding (SBERT)
+
+
+retrieval (FAISS)
+
+
+generation (FLAN-T5)
+
+
+can create a powerful AI assistant for research understanding.
